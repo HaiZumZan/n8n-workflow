@@ -1,0 +1,743 @@
+{
+  "name": "Main Gateway Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message",
+          "callback_query"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -912,
+        336
+      ],
+      "id": "a3c37e91-0967-4a47-a1fa-596534bc644c",
+      "name": "Telegram Trigger",
+      "webhookId": "5493bba4-7311-4b94-94c3-6c2bc7964f75",
+      "credentials": {
+        "telegramApi": {
+          "id": "A9AQEA5T7RWhtfK2",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2b0fe62c-dd47-4ee2-a57c-0102683f1392",
+              "name": "chatId",
+              "value": "={{ $json.message.chat.id }}",
+              "type": "number"
+            },
+            {
+              "id": "476a8c82-8e60-49f3-926a-6820fe5c76aa",
+              "name": "studentMsg",
+              "value": "={{ $json.message.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -448,
+        336
+      ],
+      "id": "69ab1d98-d12b-4a82-af2f-4a0bb81a4086",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.studentMsg }}",
+                    "rightValue": "tóm tắt",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "50e7b35e-58fe-4cb6-a2e4-bec3485dfddc"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "96650d09-4f9a-4aec-a12f-084cee7e7f77",
+                    "leftValue": "={{ $json.studentMsg }}",
+                    "rightValue": "sơ đồ",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -208,
+        336
+      ],
+      "id": "b9828e7a-39bf-4b4a-8462-758adccc0ad5",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.studentMsg }}",
+        "options": {
+          "systemMessage": "Bạn là một trợ giảng chuyên nghiệp chuyên trách việc trực quan hóa kiến thức dưới dạng sơ đồ tư duy (mindmap). \n\n### NHIỆM VỤ:\nChuyển đổi tài liệu văn bản từ Pinecone thành mã nguồn Mermaid.js định dạng mindmap.\n\n### QUY TRÌNH:\n1. TRUY XUẤT: Sử dụng công cụ \"Pinecone Vector Store\" để lấy nội dung.\n2. PHÂN TÍCH: Trích xuất các ý chính. BẮT BUỘC lọc bỏ các số trích dẫn (ví dụ: [1], 2, 3...), dấu chấm tròn (•), và các ký tự Markdown như (**).\n3. SOẠN THẢO: Chuyển thành mã Mermaid.\n\n### QUY TẮC CÚ PHÁP NGHIÊM NGẶT (BẮT BUỘC):\n1. TỪ KHÓA: KHÔNG được viết từ khóa \"mindmap\" ở đầu (Node Code sẽ tự thêm).\n2. CẤU TRÚC GỐC: Dòng đầu tiên luôn là: root((\"Tên chủ đề chính\"))\n3. THỤT LỀ: Sử dụng chính xác 2 dấu cách (space) cho mỗi cấp độ phân cấp.\n    - Cấp 1: root((\"...\"))\n    - Cấp 2:   \"Nhánh con 1\"\n    - Cấp 3:     \"Nhánh con của con 1\"\n4. NGOẶC KÉP: Tất cả các nhãn (labels) PHẢI nằm trong dấu ngoặc kép đôi \"\". \n5. ĐỘ DÀI: Mỗi nhãn không quá 10 từ. KHÔNG viết cả đoạn văn vào một nhãn.\n6. KÝ TỰ ĐẶC BIỆT: Loại bỏ hoàn toàn dấu hai chấm (:), dấu xuyệt (/), dấu ngoặc đơn () bên trong các nhãn để tránh lỗi Parser.\n\n### VÍ DỤ ĐẦU RA:\n  root((\"Luyện tập Guitar\"))\n    \"Bài tập Chromatic\"\n      \"Sử dụng 4 ngón tay\"\n      \"Tập chậm với Metronome\"\n    \"Kỹ thuật nâng cao\"\n      \"Bài tập nhện Spider\"\n      \"Hammer-on và Pull-off\"\n\n### LƯU Ý:\n- KHÔNG giải thích, KHÔNG chào hỏi, KHÔNG dùng dấu nháy code block (```).\n- Ngôn ngữ: Tiếng Việt.\n- Nếu không có dữ liệu: root((\"Không tìm thấy dữ liệu\"))"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        96,
+        336
+      ],
+      "id": "a7a1196d-4c11-4818-90e9-5fc79a97efe7",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "\"Sử dụng công cụ này để truy xuất toàn bộ nội dung, kiến thức chuyên ngành, slide bài giảng, giáo trình và các tài liệu hướng dẫn đã được nạp vào hệ thống. Đây là nguồn tri thức duy nhất để AI dựa vào đó tóm tắt và trực quan hóa thông tin cho người dùng.\"\nCRITICAL: When using this tool, you MUST pass the search term strictly inside the 'input' parameter. Example: { \"input\": \"your search query here\" }.",
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "hai-n8n",
+          "mode": "list",
+          "cachedResultName": "hai-n8n"
+        },
+        "topK": 15,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1.3,
+      "position": [
+        352,
+        592
+      ],
+      "id": "9089a125-b490-4b9b-8b19-4f6b0de21438",
+      "name": "Pinecone Vector Store",
+      "credentials": {
+        "pineconeApi": {
+          "id": "ihlTVYgrAEc49g06",
+          "name": "PineconeApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.chatId }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        176,
+        576
+      ],
+      "id": "54e722f9-fc29-42ef-9810-c33c11dbf9fa",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "model": "nomic-embed-text:latest"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
+      "typeVersion": 1,
+      "position": [
+        352,
+        784
+      ],
+      "id": "b8cb40b5-b842-490c-83b2-a06553743ba5",
+      "name": "Embeddings Ollama",
+      "credentials": {
+        "ollamaApi": {
+          "id": "xHuYe0MDGOs9IpBW",
+          "name": "Local Ollama service"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Lấy mã từ AI Agent\nlet rawCode = $input.item.json.output || \"\";\n\n// 2. Làm sạch Markdown chung\nlet cleanCode = rawCode.replace(/```mermaid|```/gi, \"\").trim();\n\n// 3. Tách dòng và xử lý\n// Nếu AI trả về 1 cục văn bản, ta cố gắng tách nó theo các dấu hiệu danh sách\nlet lines = cleanCode\n    .replace(/([0-9]+\\.|•|\\*)\\s+/g, \"\\n$1 \") // Ép xuống dòng trước các mục 1. 2. hoặc dấu chấm\n    .split('\\n');\n\nlet processedLines = [];\nlet rootFound = false;\n\nfor (let i = 0; i < lines.length; i++) {\n    let line = lines[i].trim();\n    if (!line || line.toLowerCase() === \"mindmap\") continue;\n\n    // LÀM SẠCH TRIỆT ĐỂ KÝ TỰ LỖI GUITAR\n    // Xóa dấu sao **, dấu ngoặc đơn (), dấu xuyệt /, và dấu hai chấm :\n    let cleanText = line\n        .replace(/\\*\\*|\\_\\_/g, \"\")         // Xóa in đậm\n        .replace(/[\\(\\)\\/\\\\:]/g, \" \")      // Thay ( ) / \\ : bằng khoảng trắng\n        .replace(/•|\\*|^\\d+\\./g, \"\")       // Xóa ký hiệu đầu dòng\n        .trim();\n\n    if (cleanText.length === 0) continue;\n\n    // Cấu trúc lại thành Mindmap\n    if (!rootFound) {\n        // Dòng đầu tiên làm Root\n        processedLines.push(`  root((\"${cleanText}\"))`);\n        rootFound = true;\n    } else {\n        // Các dòng sau làm nhánh con (thụt lề 4 khoảng trắng)\n        // Giới hạn độ dài để tránh lỗi URL quá dài (Mermaid.ink giới hạn khoảng 2000 ký tự)\n        let shortText = cleanText.substring(0, 80) + (cleanText.length > 80 ? \"...\" : \"\");\n        processedLines.push(`    \"${shortText}\"`);\n    }\n}\n\n// 4. Lắp ghép\nlet finalCode = \"mindmap\\n\" + processedLines.join(\"\\n\");\n\n// 5. Mã hóa Base64\nlet base64 = Buffer.from(finalCode).toString('base64')\n    .replace(/\\+/g, '-')\n    .replace(/\\//g, '_')\n    .replace(/=+$/, '');\n\nreturn {\n    mermaid_base64: base64,\n    original_code: finalCode\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        496,
+        336
+      ],
+      "id": "b3b2418b-979a-41c3-a2e8-9ed20aa7962d",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "url": "=https://mermaid.ink/img/{{ $json.mermaid_base64 }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        784,
+        416
+      ],
+      "id": "c3af6b97-90bd-4c53-a699-4c844411db09",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "operation": "sendPhoto",
+        "chatId": "={{ $('Switch').first().json.chatId }}",
+        "binaryData": true,
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1056,
+        416
+      ],
+      "id": "4a76abf3-c439-40be-abe4-524c486d1139",
+      "name": "Send a photo message",
+      "webhookId": "419603a4-7de6-4f7a-906f-9fb10525b79a",
+      "credentials": {
+        "telegramApi": {
+          "id": "A9AQEA5T7RWhtfK2",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.studentMsg }}",
+        "options": {
+          "systemMessage": "Bạn là một \"AI Knowledge Master\" chuyên nghiệp, hỗ trợ quản lý tri thức.\n\n### QUY TRÌNH TƯ DUY:\n1. TRUY XUẤT: Khi nhận câu hỏi, BẮT BUỘC sử dụng công cụ \"Pinecone Vector Store\" để tìm thông tin.\n2. XỬ LÝ KẾT QUẢ: \n   - Sau khi gọi công cụ, bạn PHẢI đọc kết quả trả về và chuyển hóa nó thành ngôn ngữ tự nhiên. \n   - TUYỆT ĐỐI KHÔNG trả về định dạng mã JSON hoặc tên công cụ cho người dùng.\n3. ĐỐI CHIẾU & TRẢ LỜI:\n   - Nếu có thông tin trong tài liệu: Trình bày chi tiết dựa trên nội dung đó.\n   - Nếu không có: Sử dụng kiến thức hệ thống và BẮT ĐẦU bằng câu: \"Dựa trên kiến thức hệ thống (không có trong tài liệu của bạn): ...\"\n\n### QUY TẮC PHẢN HỒI:\n- Ngôn ngữ: Tiếng Việt (UTF-8 chuẩn).\n- Định dạng: Sử dụng gạch đầu dòng (-) cho danh sách. \n- Nội dung: Đi thẳng vào vấn đề, chuyên nghiệp.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        224,
+        -400
+      ],
+      "id": "c779ff82-883b-4248-901f-a332fc590411",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "\"Sử dụng công cụ này để tra cứu toàn bộ cơ sở dữ liệu tri thức từ các tệp tin đã được tải lên hệ thống. Công cụ này chứa thông tin chuyên sâu, dữ liệu thực tế và các hướng dẫn chi tiết về mọi chủ đề mà người dùng đã cung cấp. Luôn luôn kiểm tra công cụ này đầu tiên để có câu trả lời chính xác nhất theo ngữ cảnh của người dùng.\"\nCRITICAL: When using this tool, you MUST pass the search term strictly inside the 'input' parameter. Example: { \"input\": \"your search query here\" }.",
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "hai-n8n",
+          "mode": "list",
+          "cachedResultName": "hai-n8n"
+        },
+        "topK": 30,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1.3,
+      "position": [
+        640,
+        -144
+      ],
+      "id": "c13366d9-be5d-4351-afeb-cf47ee92e232",
+      "name": "Pinecone Vector Store2",
+      "credentials": {
+        "pineconeApi": {
+          "id": "ihlTVYgrAEc49g06",
+          "name": "PineconeApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.chatId }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        416,
+        -96
+      ],
+      "id": "791449f0-306b-4726-89a4-18ca97cfef0b",
+      "name": "Simple Memory1"
+    },
+    {
+      "parameters": {
+        "model": "nomic-embed-text:latest"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
+      "typeVersion": 1,
+      "position": [
+        672,
+        64
+      ],
+      "id": "2f8e98bf-c00f-4e8d-bf5e-8ed8493e51a9",
+      "name": "Embeddings Ollama2",
+      "credentials": {
+        "ollamaApi": {
+          "id": "xHuYe0MDGOs9IpBW",
+          "name": "Local Ollama service"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Switch').item.json.chatId }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        992,
+        -112
+      ],
+      "id": "e32380da-d3c8-4d19-a095-db354f6a86ee",
+      "name": "Send a text message",
+      "webhookId": "381e801d-f439-4955-b6d6-89d594f397de",
+      "credentials": {
+        "telegramApi": {
+          "id": "A9AQEA5T7RWhtfK2",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "llama3.2:latest",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        224,
+        -96
+      ],
+      "id": "7e0909e6-812a-47fb-90c0-937af1b75d97",
+      "name": "Ollama Chat Model",
+      "credentials": {
+        "ollamaApi": {
+          "id": "xHuYe0MDGOs9IpBW",
+          "name": "Local Ollama service"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "llama3.2:latest",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        -48,
+        544
+      ],
+      "id": "74d6dbcb-ef73-4403-aa08-0e583e1d68ce",
+      "name": "Ollama Chat Model1",
+      "credentials": {
+        "ollamaApi": {
+          "id": "xHuYe0MDGOs9IpBW",
+          "name": "Local Ollama service"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "filter": {
+          "driveId": {
+            "__rl": true,
+            "value": "My Drive",
+            "mode": "list",
+            "cachedResultName": "My Drive",
+            "cachedResultUrl": "https://drive.google.com/drive/my-drive"
+          },
+          "folderId": {
+            "__rl": true,
+            "value": "1tOHPDbQ3nQizq4E5HVWBBDLpjJmThJ5r",
+            "mode": "id"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -656,
+        -96
+      ],
+      "id": "af1830bc-45a5-427a-96f1-f181dec80486",
+      "name": "Search files and folders",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "4sXiySwW9en7Jfu6",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -448,
+        -96
+      ],
+      "id": "f6fbc24d-9274-4a5b-a032-f043e9fe6da8",
+      "name": "Download file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "4sXiySwW9en7Jfu6",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "hai-n8n",
+          "mode": "list",
+          "cachedResultName": "hai-n8n"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1.3,
+      "position": [
+        -304,
+        -112
+      ],
+      "id": "57b7833e-a510-4142-b4f7-9758bd53ad5e",
+      "name": "Pinecone Vector Store1",
+      "credentials": {
+        "pineconeApi": {
+          "id": "ihlTVYgrAEc49g06",
+          "name": "PineconeApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        -144,
+        48
+      ],
+      "id": "49cdf6c1-9b68-4ade-b70d-a26a1b40efce",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "model": "nomic-embed-text:latest"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
+      "typeVersion": 1,
+      "position": [
+        -320,
+        112
+      ],
+      "id": "95bff6a6-02ee-4f6e-9793-70e46654b793",
+      "name": "Embeddings Ollama1",
+      "credentials": {
+        "ollamaApi": {
+          "id": "xHuYe0MDGOs9IpBW",
+          "name": "Local Ollama service"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Search files and folders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pinecone Vector Store": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Ollama": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Send a photo message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pinecone Vector Store2": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory1": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Ollama2": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pinecone Vector Store2",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search files and folders": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "Pinecone Vector Store1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Pinecone Vector Store1",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Ollama1": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pinecone Vector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "88db27f1-d86e-4e03-953a-ab636f9d6561",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "558d88703fb65b2d0e44613bc35916258b0f0bf983c5d4730c00c424b77ca36a"
+  },
+  "id": "GtL2xdtAkiGL21a2",
+  "tags": []
+}
