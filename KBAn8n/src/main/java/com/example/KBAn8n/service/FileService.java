@@ -31,25 +31,33 @@ public class FileService {
         FileMetadata file = fileRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("File không tồn tại"));
 
-        // Kiểm tra quyền: Chỉ admin hoặc chủ sở hữu mới được xóa
+        // Kiểm tra quyền
         if (!isAdmin && !"admin".equals(username) && !file.getOwnerUsername().equals(username)) {
             throw new RuntimeException("Bạn không có quyền xóa file của người khác!");
         }
 
         try {
-            // Gửi lệnh xóa sang n8n để n8n xóa Vector trong bảng documents
-            String url = UriComponentsBuilder.fromHttpUrl("http://localhost:1234/webhook/knowledge-base")
+            // ✅ CẬP NHẬT: Dùng đúng URL ngrok từ ảnh n8n của Hoa
+            String n8nUrl = "https://cornell-unpugilistic-dorsoventrally.ngrok-free.dev/webhook-test/upload-document";
+
+            String url = UriComponentsBuilder.fromHttpUrl(n8nUrl)
                     .queryParam("task", "delete")
                     .queryParam("file_name", file.getFileName())
                     .queryParam("owner_username", file.getOwnerUsername())
                     .toUriString();
 
+            System.out.println("--- [DEBUG] Đang gọi n8n để xóa tài liệu: " + file.getFileName());
+
+            // Gửi yêu cầu POST sang n8n
             restTemplate.postForEntity(url, null, String.class);
 
             // Xóa dòng quản lý trong bảng file_metadata
             fileRepository.delete(file);
+
         } catch (Exception e) {
-            throw new RuntimeException("Lỗi khi kết nối với n8n để xóa dữ liệu AI: " + e.getMessage());
+            // Log lỗi chi tiết ra console để Hoa dễ theo dõi
+            System.err.println("Lỗi kết nối n8n: " + e.getMessage());
+            throw new RuntimeException("Không thể gọi n8n để xóa dữ liệu AI. Vui lòng kiểm tra ngrok!");
         }
     }
 }
